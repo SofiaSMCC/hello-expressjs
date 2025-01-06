@@ -3,11 +3,9 @@ import axios from "axios";
 import {
   AnimeResponse,
   EpisodesResponse,
-  Episode,
-  Anime,
-  CharacterData,
   CharactersResponse,
-} from "./anime";
+} from "../types/anime";
+import { throwError } from "../anime/anime.error";
 
 require("dotenv").config();
 
@@ -28,6 +26,8 @@ export const fetchAllData = async (
   }
 };
 
+// Fetch anime by ID
+
 export const fetchAnime = async (
   req: Request,
   res: Response,
@@ -42,7 +42,7 @@ export const fetchAnime = async (
   }
 };
 
-// Get anime by gender
+// Get anime by genre
 
 export const animeByGenre = async (
   req: Request,
@@ -51,20 +51,29 @@ export const animeByGenre = async (
 ): Promise<void> => {
   try {
     const genreName = req.params.genreName.toLowerCase();
+
+    if (!genreName) {
+      throwError("Genre name is required", 400);
+    }
+
     const response = await axios.get<AnimeResponse>(`${url}/anime`);
 
     const animes = response.data.data.filter((anime) =>
       anime.genres.some((genre) => genre.name.toLowerCase() === genreName)
     );
 
-    const result = animes.map((anime) => ({
+    if (!animes || animes.length === 0) {
+      throwError(`No anime found for genre: ${genreName}`, 404);
+    }
+
+    const result = animes.map((anime: any) => ({
       id: anime.mal_id,
       title: anime.title,
-      image: anime.images.jpg.image_url,
+      image: anime.images,
       year: anime.year,
     }));
 
-    res.json({ data: result });
+    res.json({ result });
   } catch (error) {
     next(error);
   }
@@ -80,25 +89,34 @@ export const animeByWords = async (
   try {
     const query = req.params.query;
 
+    if (!query) {
+      throwError("Query is required", 400);
+    }
+
     const searchResponse = await axios.get<AnimeResponse>(`${url}/anime`, {
       params: { q: query },
     });
 
-    if (searchResponse.data.data.length === 0) {
-      res.status(404).json({ error: "Anime not found." });
-      return;
+    const anime_data = searchResponse.data.data;
+
+    if (!anime_data || anime_data.length === 0) {
+      throwError("Anime not found", 404);
     }
 
     const animes = searchResponse.data.data
-      .filter((anime: Anime) =>
+      .filter((anime: any) =>
         anime.title.toLowerCase().includes(query.toLowerCase())
       )
-      .map((anime: Anime) => ({
+      .map((anime: any) => ({
         id: anime.mal_id,
         title: anime.title,
-        image: anime.images.jpg.image_url,
+        image: anime.images,
         year: anime.year,
       }));
+
+    if (!animes || animes.length === 0) {
+      throwError("Anime not found", 404);
+    }
 
     res.json({ animes: animes });
   } catch (error) {
@@ -115,30 +133,50 @@ export const animeEpisodes = async (
 ): Promise<void> => {
   try {
     const animeName = req.params.anime;
+
+    if (!animeName) {
+      throwError("Anime name is required", 400);
+    }
+
     const searchResponse = await axios.get<AnimeResponse>(`${url}/anime`, {
       params: { q: animeName },
     });
 
-    if (searchResponse.data.data.length === 0) {
-      res.status(404).json({ error: "Anime not found." });
-      return;
+    const animeData = searchResponse.data.data;
+
+    if (!animeData || animeData.length === 0) {
+      throwError("Anime not found", 404);
     }
 
-    const animeId = searchResponse.data.data[0].mal_id;
+    const exactMatch = animeData.find(
+      (anime) => anime.title.toLowerCase() === animeName.toLowerCase()
+    );
+
+    if (!exactMatch) {
+      throwError("Anime not found", 404);
+    }
+
+    const animeId = exactMatch.mal_id;
     const episodesResponse = await axios.get<EpisodesResponse>(
       `${url}/anime/${animeId}/videos`
     );
 
+    if (
+      !episodesResponse.data.data.episodes ||
+      episodesResponse.data.data.episodes.length === 0
+    ) {
+      throwError("Episodes not found", 404);
+    }
+
     const episodes = episodesResponse.data.data.episodes.map(
-      (episode: Episode) => ({
+      (episode: any) => ({
         id: episode.mal_id,
         url: episode.url,
-        image: episode.images.jpg.image_url,
+        image: episode.images,
       })
     );
-    // .sort((a, b) => a.id - b.id); // Order episodes by id
 
-    res.json({ episodes: episodes });
+    res.json({ episodes });
   } catch (error) {
     next(error);
   }
@@ -152,33 +190,44 @@ export const fetchAnimeCharacters = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const animeName = encodeURIComponent(req.params.anime);
+    const animeName = req.params.anime;
+
+    if (!animeName) {
+      throwError("Anime name is required", 400);
+    }
 
     const searchResponse = await axios.get<AnimeResponse>(`${url}/anime`, {
       params: { q: animeName },
     });
 
-    if (searchResponse.data.data.length === 0) {
-      res.status(404).json({ error: "Anime not found." });
-      return;
+    const animeData = searchResponse.data.data;
+
+    if (!animeData || animeData.length === 0) {
+      throwError("Anime not found", 404);
     }
 
-    const animeId = searchResponse.data.data[0].mal_id;
+    const exactMatch = animeData.find(
+      (anime) => anime.title.toLowerCase() === animeName.toLowerCase()
+    );
+
+    if (!exactMatch) {
+      throwError("Anime not found", 404);
+    }
+
+    const animeId = exactMatch.mal_id;
 
     const response = await axios.get<CharactersResponse>(
       `${url}/anime/${animeId}/characters`
     );
 
-    const characters = response.data.data.map(
-      (characterData: CharacterData) => {
-        const character = characterData.character;
-        return {
-          id: character.mal_id,
-          name: character.name,
-          image: character.images?.jpg?.image_url,
-        };
-      }
-    );
+    const characters = response.data.data.map((characterData: any) => {
+      const character = characterData.character;
+      return {
+        id: character.mal_id,
+        name: character.name,
+        image: character.images,
+      };
+    });
 
     res.json({ characters });
   } catch (error) {

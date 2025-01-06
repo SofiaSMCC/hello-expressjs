@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { User } from "./user";
+import { User } from "../types/user";
 import dotenv from "dotenv";
 
 dotenv.config();
