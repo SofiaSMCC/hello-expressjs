@@ -36,6 +36,11 @@ export const fetchAnime = async (
   try {
     const animeId = req.params.id;
     const response = await axios.get(`${url}/anime/${animeId}`);
+
+    if (!response.data) {
+      throwError("Anime not found", 404);
+    }
+
     res.json(response.data);
   } catch (error) {
     next(error);
@@ -219,6 +224,10 @@ export const fetchAnimeCharacters = async (
     const response = await axios.get<CharactersResponse>(
       `${url}/anime/${animeId}/characters`
     );
+
+    if (!response.data.data || response.data.data.length === 0) {
+      throwError("Characters not found", 404);
+    }
 
     const characters = response.data.data.map((characterData: any) => {
       const character = characterData.character;
