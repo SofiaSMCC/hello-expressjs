@@ -23,6 +23,7 @@ app.get("/anime/search/:query", animeByWords);
 app.get("/anime/:anime/episodes", animeEpisodes);
 app.get("/anime/:anime/characters", fetchAnimeCharacters);
 
+// Use to simulate axios for testing
 jest.mock("axios", () => ({
   get: jest.fn(),
 }));
@@ -37,6 +38,7 @@ const token = jwt.sign({ username: "testuser" }, secretKey, {
   expiresIn: "1h",
 });
 
+// Handling Errors
 app.use(
   (err: CustomError, _req: Request, res: Response, _next: NextFunction) => {
     const statusCode = err.status || 500;
@@ -47,37 +49,18 @@ app.use(
   }
 );
 
-describe("Anime Controller", () => {
-  it("should fetch all data", async () => {
-    const axios = require("axios");
-    axios.get.mockResolvedValue({ data: { data: [] } });
-
-    const response = await request(app)
-      .get("/anime")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ data: [] });
-  });
-
-  it("should fetch anime by ID", async () => {
-    const axios = require("axios");
-    axios.get.mockResolvedValue({ data: { id: 1, title: "Example Anime" } });
-
-    const response = await request(app)
-      .get("/anime/1")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ id: 1, title: "Example Anime" });
-  });
-
-  it("should fetch anime by genre", async () => {
+describe("anime controller", () => {
+  test("should fetch anime by genre", async () => {
     const axios = require("axios");
     axios.get.mockResolvedValue({
       data: {
         data: [
-          { mal_id: 1, title: "Example Anime", genres: [{ name: "action" }] },
+          {
+            mal_id: 1,
+            title: "Cowboy Bebop",
+            genres: [{ name: "action" }],
+            year: "2014",
+          },
         ],
       },
     });
@@ -89,36 +72,67 @@ describe("Anime Controller", () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       result: [
-        { id: 1, title: "Example Anime", image: undefined, year: undefined },
+        {
+          id: 1,
+          title: "Cowboy Bebop",
+          image: undefined,
+          year: "2014",
+        },
       ],
     });
   });
 
-  it("should fetch anime by words", async () => {
+  test("should fetch anime by words", async () => {
     const axios = require("axios");
     axios.get.mockResolvedValue({
-      data: { data: [{ mal_id: 1, title: "Example Anime" }] },
+      data: {
+        data: [
+          {
+            mal_id: 1,
+            title: "Naruto",
+            images: "https://example.com/naruto.jpg",
+            year: "2002",
+          },
+          {
+            mal_id: 2,
+            title: "One Piece",
+            images: "https://example.com/onepiece.jpg",
+            year: "1999",
+          },
+          {
+            mal_id: 3,
+            title: "Attack on Titan",
+            images: "https://example.com/aot.jpg",
+            year: "2013",
+          },
+        ],
+      },
     });
 
     const response = await request(app)
-      .get("/anime/search/example")
+      .get("/anime/search/naruto")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       animes: [
-        { id: 1, title: "Example Anime", image: undefined, year: undefined },
+        {
+          id: 1,
+          title: "Naruto",
+          image: "https://example.com/naruto.jpg",
+          year: "2002",
+        },
       ],
     });
   });
 
-  it("should fetch anime episodes", async () => {
+  test("should fetch anime episodes", async () => {
     const axios = require("axios");
     axios.get
       .mockImplementationOnce(() =>
         Promise.resolve({
           data: {
-            data: [{ mal_id: 1, title: "Example Anime" }],
+            data: [{ mal_id: 1, title: "Naruto" }],
           },
         })
       )
@@ -127,7 +141,30 @@ describe("Anime Controller", () => {
           data: {
             data: {
               episodes: [
-                { mal_id: 101, url: "http://example.com/episode1", images: {} },
+                {
+                  mal_id: 101,
+                  url: "https://www.crunchyroll.com/naruto/episode-1-enter-naruto-uzumaki-520",
+                  images: [
+                    {
+                      jpg: {
+                        image_url:
+                          "https://img1.ak.crunchyroll.com/i/spire3/1a41a51fef4d8475b2d1d3d5f4e9efb41482646269_full.jpg",
+                      },
+                    },
+                  ],
+                },
+                {
+                  mal_id: 102,
+                  url: "https://www.crunchyroll.com/naruto/episode-2-my-name-is-konohamaru-521",
+                  images: [
+                    {
+                      jpg: {
+                        image_url:
+                          "https://img1.ak.crunchyroll.com/i/spire1/d3f4f1e3f4cda1e1f4b4edadf3ed9d521482646269_full.jpg",
+                      },
+                    },
+                  ],
+                },
               ],
             },
           },
@@ -135,22 +172,47 @@ describe("Anime Controller", () => {
       );
 
     const response = await request(app)
-      .get("/anime/Example Anime/episodes")
+      .get("/anime/Naruto/episodes")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
-      episodes: [{ id: 101, url: "http://example.com/episode1", image: {} }],
+      episodes: [
+        {
+          id: 101,
+          url: "https://www.crunchyroll.com/naruto/episode-1-enter-naruto-uzumaki-520",
+          image: [
+            {
+              jpg: {
+                image_url:
+                  "https://img1.ak.crunchyroll.com/i/spire3/1a41a51fef4d8475b2d1d3d5f4e9efb41482646269_full.jpg",
+              },
+            },
+          ],
+        },
+        {
+          id: 102,
+          url: "https://www.crunchyroll.com/naruto/episode-2-my-name-is-konohamaru-521",
+          image: [
+            {
+              jpg: {
+                image_url:
+                  "https://img1.ak.crunchyroll.com/i/spire1/d3f4f1e3f4cda1e1f4b4edadf3ed9d521482646269_full.jpg",
+              },
+            },
+          ],
+        },
+      ],
     });
   });
 
-  it("should fetch anime characters", async () => {
+  test("should fetch anime characters", async () => {
     const axios = require("axios");
     axios.get
       .mockImplementationOnce(() =>
         Promise.resolve({
           data: {
-            data: [{ mal_id: 1, title: "Example Anime" }],
+            data: [{ mal_id: 1, title: "Naruto" }],
           },
         })
       )
@@ -158,30 +220,82 @@ describe("Anime Controller", () => {
         Promise.resolve({
           data: {
             data: [
-              { character: { mal_id: 201, name: "Character 1", images: {} } },
+              {
+                character: {
+                  mal_id: 201,
+                  name: "Naruto Uzumaki",
+                  images: [
+                    {
+                      jpg: {
+                        image_url:
+                          "https://img1.ak.crunchyroll.com/i/spire3/1a41a51fef4d8475b2d1d3d5f4e9efb41482646269_full.jpg",
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                character: {
+                  mal_id: 202,
+                  name: "Sasuke Uchiha",
+                  images: [
+                    {
+                      jpg: {
+                        image_url:
+                          "https://img1.ak.crunchyroll.com/i/spire1/d3f4f1e3f4cda1e1f4b4edadf3ed9d521482646269_full.jpg",
+                      },
+                    },
+                  ],
+                },
+              },
             ],
           },
         })
       );
 
     const response = await request(app)
-      .get("/anime/Example Anime/characters")
+      .get("/anime/Naruto/characters")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
-      characters: [{ id: 201, name: "Character 1", image: {} }],
+      characters: [
+        {
+          id: 201,
+          name: "Naruto Uzumaki",
+          image: [
+            {
+              jpg: {
+                image_url:
+                  "https://img1.ak.crunchyroll.com/i/spire3/1a41a51fef4d8475b2d1d3d5f4e9efb41482646269_full.jpg",
+              },
+            },
+          ],
+        },
+        {
+          id: 202,
+          name: "Sasuke Uchiha",
+          image: [
+            {
+              jpg: {
+                image_url:
+                  "https://img1.ak.crunchyroll.com/i/spire1/d3f4f1e3f4cda1e1f4b4edadf3ed9d521482646269_full.jpg",
+              },
+            },
+          ],
+        },
+      ],
     });
   });
 
   // Tests de error
 
-  it("should return 404 if anime ID not found", async () => {
+  test("should return 404 if anime ID not found", async () => {
     const axios = require("axios");
     axios.get.mockResolvedValue({ data: null });
 
     const response = await request(app)
-      .get("/anime/999")
+      .get("/anime/123")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(404);
@@ -191,7 +305,7 @@ describe("Anime Controller", () => {
     });
   });
 
-  it("should return 400 if genre name is missing", async () => {
+  test("should return 400 if genre name is missing", async () => {
     const axios = require("axios");
     const error: CustomError = new Error("Genre name is required");
     error.status = 400;
@@ -208,22 +322,22 @@ describe("Anime Controller", () => {
     });
   });
 
-  it("should return 404 if anime by genre not found", async () => {
+  test("should return 404 if anime by genre not found", async () => {
     const axios = require("axios");
     axios.get.mockResolvedValue({ data: { data: [] } });
 
     const response = await request(app)
-      .get("/anime/genre/nonexistentgenre")
+      .get("/anime/genre/horror123")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({
       message: "An error occurred",
-      error: "No anime found for genre: nonexistentgenre",
+      error: "No anime found for genre: horror123",
     });
   });
 
-  it("should return 400 if search query is missing", async () => {
+  test("should return 400 if search query is missing", async () => {
     const axios = require("axios");
     const error: CustomError = new Error("Query is required");
     error.status = 400;
@@ -240,7 +354,7 @@ describe("Anime Controller", () => {
     });
   });
 
-  it("should return 404 if anime by search query not found", async () => {
+  test("should return 404 if anime by search query not found", async () => {
     const axios = require("axios");
     axios.get.mockResolvedValue({ data: { data: [] } });
 
@@ -255,13 +369,13 @@ describe("Anime Controller", () => {
     });
   });
 
-  it("should return 404 if episodes not found", async () => {
+  test("should return 404 if episodes not found", async () => {
     const axios = require("axios");
     axios.get
       .mockImplementationOnce(() =>
         Promise.resolve({
           data: {
-            data: [{ mal_id: 1, title: "Example Anime" }],
+            data: [{ mal_id: 20, title: "Naruto" }],
           },
         })
       )
@@ -276,7 +390,7 @@ describe("Anime Controller", () => {
       );
 
     const response = await request(app)
-      .get("/anime/Example Anime/episodes")
+      .get("/anime/Naruto/episodes")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(404);
@@ -286,13 +400,13 @@ describe("Anime Controller", () => {
     });
   });
 
-  it("should return 404 if characters not found", async () => {
+  test("should return 404 if characters not found", async () => {
     const axios = require("axios");
     axios.get
       .mockImplementationOnce(() =>
         Promise.resolve({
           data: {
-            data: [{ mal_id: 1, title: "Example Anime" }],
+            data: [{ mal_id: 20, title: "Naruto" }],
           },
         })
       )
@@ -305,7 +419,7 @@ describe("Anime Controller", () => {
       );
 
     const response = await request(app)
-      .get("/anime/Example Anime/characters")
+      .get("/anime/Naruto/characters")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(404);

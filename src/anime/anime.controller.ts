@@ -41,7 +41,10 @@ export const fetchAnime = async (
       throwError("Anime not found", 404);
     }
 
-    res.json(response.data);
+    const { title, trailer } = response.data.data;
+    const trailer_url = trailer.url;
+
+    res.json({ title, trailer_url });
   } catch (error) {
     next(error);
   }
