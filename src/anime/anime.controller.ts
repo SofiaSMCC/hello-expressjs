@@ -59,6 +59,8 @@ export const animeByGenre = async (
 ): Promise<void> => {
   try {
     const genreName = req.params.genreName.toLowerCase();
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
 
     if (!genreName) {
       throwError("Genre name is required", 400);
@@ -74,14 +76,23 @@ export const animeByGenre = async (
       throwError(`No anime found for genre: ${genreName}`, 404);
     }
 
-    const result = animes.map((anime: any) => ({
-      id: anime.mal_id,
-      title: anime.title,
-      image: anime.images,
-      year: anime.year,
-    }));
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedAnimes = animes
+      .slice(startIndex, endIndex)
+      .map((anime: any) => ({
+        id: anime.mal_id,
+        title: anime.title,
+        image: anime.images,
+        year: anime.year,
+      }));
 
-    res.json({ result });
+    const pagination = {
+      currentPage: page,
+      hasNextPage: endIndex < animes.length,
+    };
+
+    res.json({ result: paginatedAnimes, pagination });
   } catch (error) {
     next(error);
   }
@@ -96,6 +107,8 @@ export const animeByWords = async (
 ): Promise<void> => {
   try {
     const query = req.params.query;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
 
     if (!query) {
       throwError("Query is required", 400);
@@ -126,7 +139,16 @@ export const animeByWords = async (
       throwError("Anime not found", 404);
     }
 
-    res.json({ animes: animes });
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedAnimes = animes.slice(startIndex, endIndex);
+
+    const pagination = {
+      currentPage: page,
+      hasNextPage: endIndex < animes.length,
+    };
+
+    res.json({ animes: paginatedAnimes, pagination });
   } catch (error) {
     next(error);
   }
@@ -141,6 +163,8 @@ export const animeEpisodes = async (
 ): Promise<void> => {
   try {
     const animeName = req.params.anime;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
 
     if (!animeName) {
       throwError("Anime name is required", 400);
@@ -176,15 +200,22 @@ export const animeEpisodes = async (
       throwError("Episodes not found", 404);
     }
 
-    const episodes = episodesResponse.data.data.episodes.map(
-      (episode: any) => ({
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const episodes = episodesResponse.data.data.episodes
+      .slice(startIndex, endIndex)
+      .map((episode: any) => ({
         id: episode.mal_id,
         url: episode.url,
         image: episode.images,
-      })
-    );
+      }));
 
-    res.json({ episodes });
+    const pagination = {
+      currentPage: page,
+      hasNextPage: endIndex < episodesResponse.data.data.episodes.length,
+    };
+
+    res.json({ episodes, pagination });
   } catch (error) {
     next(error);
   }

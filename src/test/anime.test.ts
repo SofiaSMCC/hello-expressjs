@@ -126,7 +126,7 @@ describe("anime controller", () => {
     });
   });
 
-  test("should fetch anime episodes", async () => {
+  test("should fetch anime episodes with pagination", async () => {
     const axios = require("axios");
     axios.get
       .mockImplementationOnce(() =>
@@ -172,7 +172,7 @@ describe("anime controller", () => {
       );
 
     const response = await request(app)
-      .get("/anime/Naruto/episodes")
+      .get("/anime/Naruto/episodes?page=1&limit=2")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
@@ -203,6 +203,10 @@ describe("anime controller", () => {
           ],
         },
       ],
+      pagination: {
+        currentPage: 1,
+        hasNextPage: false,
+      },
     });
   });
 
