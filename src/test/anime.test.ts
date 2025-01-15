@@ -50,7 +50,6 @@ app.use(
 );
 
 describe("anime controller", () => {
-  // Test for fetching anime by genre with pagination
   test("should fetch anime by genre with pagination", async () => {
     const axios = require("axios");
     axios.get.mockResolvedValue({
@@ -95,7 +94,6 @@ describe("anime controller", () => {
     });
   });
 
-  // Test for fetching anime by words with pagination
   test("should fetch anime by words with pagination", async () => {
     const axios = require("axios");
     axios.get.mockResolvedValue({
@@ -150,7 +148,6 @@ describe("anime controller", () => {
     });
   });
 
-  // Test for fetching anime episodes with pagination
   test("should fetch anime episodes with pagination", async () => {
     const axios = require("axios");
     axios.get
@@ -235,7 +232,6 @@ describe("anime controller", () => {
     });
   });
 
-  // Test for fetching anime characters
   test("should fetch anime characters", async () => {
     const axios = require("axios");
     axios.get
