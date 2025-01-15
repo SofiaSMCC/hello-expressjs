@@ -50,7 +50,8 @@ app.use(
 );
 
 describe("anime controller", () => {
-  test("should fetch anime by genre", async () => {
+  // Test for fetching anime by genre with pagination
+  test("should fetch anime by genre with pagination", async () => {
     const axios = require("axios");
     axios.get.mockResolvedValue({
       data: {
@@ -59,14 +60,22 @@ describe("anime controller", () => {
             mal_id: 1,
             title: "Cowboy Bebop",
             genres: [{ name: "action" }],
-            year: "2014",
+            year: "1998",
+            images: "https://example.com/cowboybebop.jpg",
+          },
+          {
+            mal_id: 2,
+            title: "Samurai Champloo",
+            genres: [{ name: "action" }],
+            year: "2004",
+            images: "https://example.com/samuraichamploo.jpg",
           },
         ],
       },
     });
 
     const response = await request(app)
-      .get("/anime/genre/action")
+      .get("/anime/genre/action?page=1&limit=1")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
@@ -75,14 +84,19 @@ describe("anime controller", () => {
         {
           id: 1,
           title: "Cowboy Bebop",
-          image: undefined,
-          year: "2014",
+          image: "https://example.com/cowboybebop.jpg",
+          year: "1998",
         },
       ],
+      pagination: {
+        currentPage: 1,
+        hasNextPage: true,
+      },
     });
   });
 
-  test("should fetch anime by words", async () => {
+  // Test for fetching anime by words with pagination
+  test("should fetch anime by words with pagination", async () => {
     const axios = require("axios");
     axios.get.mockResolvedValue({
       data: {
@@ -95,22 +109,22 @@ describe("anime controller", () => {
           },
           {
             mal_id: 2,
-            title: "One Piece",
-            images: "https://example.com/onepiece.jpg",
-            year: "1999",
+            title: "Naruto Shippuden",
+            images: "https://example.com/narutoshippuden.jpg",
+            year: "2007",
           },
           {
             mal_id: 3,
-            title: "Attack on Titan",
-            images: "https://example.com/aot.jpg",
-            year: "2013",
+            title: "Naruto: Boruto Next Generations",
+            images: "https://example.com/boruto.jpg",
+            year: "2017",
           },
         ],
       },
     });
 
     const response = await request(app)
-      .get("/anime/search/naruto")
+      .get("/anime/search/naruto?page=1&limit=2")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
@@ -122,11 +136,22 @@ describe("anime controller", () => {
           image: "https://example.com/naruto.jpg",
           year: "2002",
         },
+        {
+          id: 2,
+          title: "Naruto Shippuden",
+          image: "https://example.com/narutoshippuden.jpg",
+          year: "2007",
+        },
       ],
+      pagination: {
+        currentPage: 1,
+        hasNextPage: true,
+      },
     });
   });
 
-  test("should fetch anime episodes", async () => {
+  // Test for fetching anime episodes with pagination
+  test("should fetch anime episodes with pagination", async () => {
     const axios = require("axios");
     axios.get
       .mockImplementationOnce(() =>
@@ -172,7 +197,7 @@ describe("anime controller", () => {
       );
 
     const response = await request(app)
-      .get("/anime/Naruto/episodes")
+      .get("/anime/Naruto/episodes?page=1&limit=2")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
@@ -203,9 +228,14 @@ describe("anime controller", () => {
           ],
         },
       ],
+      pagination: {
+        currentPage: 1,
+        hasNextPage: false,
+      },
     });
   });
 
+  // Test for fetching anime characters
   test("should fetch anime characters", async () => {
     const axios = require("axios");
     axios.get
@@ -288,7 +318,7 @@ describe("anime controller", () => {
     });
   });
 
-  // Tests de error
+  // Error Tests
 
   test("should return 404 if anime ID not found", async () => {
     const axios = require("axios");
