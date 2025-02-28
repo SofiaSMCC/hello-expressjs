@@ -9,10 +9,10 @@ import { authenticateJWT } from "../auth/auth.controller";
 
 const router = express.Router();
 
-router.get("/", authenticateJWT, fetchAllMovies);
+router.use(authenticateJWT);
 
-router.post("/", authenticateJWT, validateMovie, createMovie);
-
-router.get("/:id", authenticateJWT, fetchMovieById);
+router.get("/", fetchAllMovies);
+router.post("/", validateMovie, createMovie);
+router.get("/:id", fetchMovieById);
 
 export default router;

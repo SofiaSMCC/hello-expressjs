@@ -1,23 +1,31 @@
 # Hello ExpressJS
 
-## Instalación
+## Installation Process
 
-```bash
-git clone https://github.com/SofiaSMCC/hello-word.git
-cd hello-word
+### Project Set Up
+
+```sh
+git clone https://github.com/SofiaSMCC/hello-expressjs.git
+cd hello-expressjs
 npm install
 ```
 
-## Ejecutar el programa
+## Commands
 
-Desarrollo
+### Dev
 
-```bash
+```sh
 npm run dev
 ```
 
-Producción
+### Production
 
-```bash
+```sh
 npm start
+```
+
+### Testing
+
+```sh
+npm test
 ```

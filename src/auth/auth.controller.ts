@@ -1,9 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { User } from "./user";
+import { User } from "../types/user";
+import dotenv from "dotenv";
+import logger from "../logger";
 
-const secretKey = "1234";
+dotenv.config();
+
+const secretKey = process.env.SECRET_KEY;
+
+if (!secretKey) {
+  throw new Error("Secret Key is not defined");
+}
 
 let users: User[] = [];
 
@@ -16,8 +24,9 @@ export const register = async (
 
   try {
     const existingUser = users.find((user) => user.username === username);
+
     if (existingUser) {
-      res.status(400).json({ message: "El usuario ya existe" });
+      res.status(400).json({ message: "User already exist." });
       return;
     }
 
@@ -25,7 +34,7 @@ export const register = async (
     const newUser = { username, password: hashedPassword };
     users.push(newUser);
 
-    res.status(201).json({ message: "Usuario registrado exitosamente" });
+    res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     next(error);
   }
@@ -41,13 +50,17 @@ export const login = async (
   try {
     const user = users.find((user) => user.username === username);
     if (!user) {
-      res.status(401).json({ message: "Credenciales incorrectas" });
+      const warn_message = "Login attempt with incorrect username";
+      logger.warn(`${warn_message}: ${username}`);
+      res.status(401).json({ message: warn_message });
       return;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      res.status(401).json({ message: "Credenciales incorrectas" });
+      const warn_message = "Login attempt with incorrect password";
+      logger.warn(`${warn_message}: ${password}`);
+      res.status(401).json({ message: warn_message });
       return;
     }
 
@@ -68,7 +81,8 @@ export const authenticateJWT = (
   if (token) {
     jwt.verify(token, secretKey, (err, user) => {
       if (err) {
-        return res.sendStatus(403);
+        logger.error(`Failed JWT authentication: ${err.message}`);
+        return res.sendStatus(401);
       }
 
       // @ts-ignore
@@ -76,6 +90,7 @@ export const authenticateJWT = (
       next();
     });
   } else {
+    logger.error("JWT token missing in request");
     res.sendStatus(401);
   }
 };
